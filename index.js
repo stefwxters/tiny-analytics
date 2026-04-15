@@ -76,7 +76,7 @@ export default {
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
       <script src="https://cdn.tailwindcss.com"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-      <title>Pro Analytics</title>
+      <title>Tiny Analytics</title>
       <script>
         tailwind.config = { darkMode: 'media' } // Automatische Dark Mode switch!
       </script>
@@ -84,7 +84,7 @@ export default {
     <body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 p-4 md:p-8 font-sans">
       <div class="max-w-6xl mx-auto">
         <header class="flex justify-between items-center mb-10 pb-4 border-b border-gray-200 dark:border-gray-800">
-          <h1 class="text-xl font-bold">PRO ANALYTICS</h1>
+          <h1 class="text-xl font-bold">Tiny Analytics</h1>
           <button onclick="document.cookie='auth=; Max-Age=0; path=/;'; location.href='/';" class="text-xs text-red-500">Logout</button>
         </header>
 
