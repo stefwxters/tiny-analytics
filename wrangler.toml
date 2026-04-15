@@ -7,3 +7,4 @@ binding = "DB" # Dit moet hetzelfde zijn als 'env.DB' in je code
 database_name = "analytics_db"
 database_id = "7b140f8b-a6ac-42bd-b2da-ab7390b2e899"
 ADMIN_PASSWORD = "demo"
+ALLOWED_DOMAIN = "tiny-analytics.wautersstef4.workers.dev"
