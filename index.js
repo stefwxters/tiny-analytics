@@ -22,7 +22,7 @@ export default {
     const isLoggingIn = inputPwd === expectedPwd || decodeURIComponent(inputPwd) === expectedPwd;
 
     if (!hasValidCookie && !isLoggingIn) {
-      return new Response('<html><body style="display:flex;justify-content:center;align-items:center;height:100vh;background:#000;color:#fff;font-family:sans-serif;margin:0;"><form action="/" method="GET" style="background:#111;padding:2rem;border-radius:15px;border:1px solid #333;width:300px;text-align:center;"><h2 style="color:#3b82f6;">📊 Analytics Login</h2><input type="password" name="login_pwd" placeholder="Wachtwoord" style="padding:12px;border-radius:8px;border:1px solid #444;background:#222;color:#fff;margin-bottom:15px;width:100%;box-sizing:border-box;"><button type="submit" style="padding:12px;width:100%;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">Login</button></form></body></html>', { headers: { 'Content-Type': 'text/html' } });
+      return new Response('<html><body style="display:flex;justify-content:center;align-items:center;height:100vh;background:#000;color:#fff;font-family:sans-serif;margin:0;"><form action="/" method="GET" style="background:#111;padding:2rem;border-radius:15px;border:1px solid #333;width:300px;text-align:center;"><h2 style="color:#3b82f6;">Tiny Analytics Login</h2><input type="password" name="login_pwd" placeholder="Wachtwoord" style="padding:12px;border-radius:8px;border:1px solid #444;background:#222;color:#fff;margin-bottom:15px;width:100%;box-sizing:border-box;"><button type="submit" style="padding:12px;width:100%;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">Login</button></form></body></html>', { headers: { 'Content-Type': 'text/html' } });
     }
 
     const stats = await env.DB.prepare('SELECT url, COUNT(*) as views FROM visits GROUP BY url ORDER BY views DESC').all();
@@ -91,6 +91,21 @@ export default {
         });
       </script>
     </body>
+    <script>
+  (function() {
+    const workerUrl = "https://tiny-analytics.wautersstef4.workers.dev/";
+    
+    fetch(workerUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        url: window.location.pathname,
+        ref: document.referrer,
+        width: window.innerWidth
+      }),
+      mode: 'no-cors' 
+    });
+  })();
+</script>
     </html>`;
 
     return new Response(dashboardHtml, { headers: headers });
