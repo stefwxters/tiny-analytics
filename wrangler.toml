@@ -5,4 +5,4 @@ compatibility_date = "2024-01-01"
 [[d1_databases]]
 binding = "DB" # Dit moet hetzelfde zijn als 'env.DB' in je code
 database_name = "analytics_db"
-database_id = "fc6e3af2-4a50-40ea-aed9-a20473aadebc"
+database_id = "7b140f8b-a6ac-42bd-b2da-ab7390b2e899"
