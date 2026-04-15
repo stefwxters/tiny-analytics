@@ -109,6 +109,19 @@ export default {
           }
         });
       </script>
+      <script>
+  (function() {
+    fetch("https://tiny-analytics.wautersstef4.workers.dev", {
+      method: "POST",
+      mode: "cors", // Dit is nu belangrijk!
+      body: JSON.stringify({
+        url: window.location.pathname,
+        ref: document.referrer,
+        width: window.innerWidth
+      })
+    });
+  })();
+</script>
     </body>
     </html>`;
 
