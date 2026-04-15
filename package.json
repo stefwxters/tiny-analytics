@@ -1,0 +1,8 @@
+{
+  "name": "tiny-analytics",
+  "version": "1.0.0",
+  "devDependencies": {
+    "wrangler": "latest"
+  },
+  "private": true
+}
