@@ -1,77 +1,116 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const cookieHeader = request.headers.get("Cookie") || "";
 
-    // 1. DATA OPSLAAN (POST)
+    // 1. DATA OPSLAAN (Voor je website)
     if (request.method === "POST") {
       const data = await request.json();
-      // We maken een simpele hash van het IP voor unieke bezoekers (zonder IP op te slaan!)
-      const ip = request.headers.get("cf-connecting-ip") || "0.0.0.0";
-      const userHash = await b64(await crypto.subtle.digest("SHA-1", new TextEncoder().encode(ip + new Date().toDateString())));
+      const ip = request.headers.get("cf-connecting-ip") || "Unknown";
+      const country = request.cf?.country || "Unknown";
+      const browser = request.headers.get("user-agent") || "Unknown";
 
       await env.DB.prepare(
-        "INSERT INTO visits (url, referrer, width) VALUES (?, ?, ?)"
-      ).bind(data.url, data.ref, data.width).run();
+        "INSERT INTO visits (url, referrer, width, country, ip, browser) VALUES (?, ?, ?, ?, ?, ?)"
+      ).bind(data.url, data.ref, data.width, country, ip, browser).run();
       
       return new Response("OK", { status: 201, headers: { "Access-Control-Allow-Origin": "*" } });
     }
 
-    // 2. BEVEILIGING: Check wachtwoord in de URL (?pwd=jouw_wachtwoord)
-    const pwd = url.searchParams.get("pwd");
-    if (pwd !== env.ADMIN_PASSWORD) {
-      return new Response("Geen toegang. Gebruik ?pwd=wachtwoord", { status: 401 });
+    // 2. LOGIN LOGICA (Wachtwoord checken)
+    if (url.searchParams.has("login_pwd")) {
+      if (url.searchParams.get("login_pwd") === env.ADMIN_PASSWORD) {
+        return new Response("Inloggen...", {
+          status: 302,
+          headers: { 
+            "Set-Cookie": `auth=${env.ADMIN_PASSWORD}; Path=/; HttpOnly; Max-Age=604800`,
+            "Location": url.origin
+          }
+        });
+      }
     }
 
-    // 3. DATA OPHALEN VOOR DASHBOARD
+    // 3. AUTHENTICATIE CHECK (Heb je de cookie?)
+    const isLoggedIn = cookieHeader.includes(`auth=${env.ADMIN_PASSWORD}`);
+    if (!isLoggedIn) {
+      return new Response(`
+        <html>
+          <body style="display:flex;justify-content:center;align-items:center;height:100vh;background:#111;color:#fff;font-family:sans-serif;">
+            <form action="/" method="GET" style="background:#222;padding:2rem;border-radius:10px;">
+              <h2>Inloggen</h2>
+              <input type="password" name="login_pwd" placeholder="Wachtwoord" style="padding:10px;border-radius:5px;border:none;">
+              <button type="submit" style="padding:10px;background:#3b82f6;color:white;border:none;border-radius:5px;cursor:pointer;">Enter</button>
+            </form>
+          </body>
+        </html>`, { headers: { "Content-Type": "text/html" } });
+    }
+
+    // 4. DATA OPHALEN VOOR DASHBOARD
     const stats = await env.DB.prepare("SELECT url, COUNT(*) as views FROM visits GROUP BY url ORDER BY views DESC").all();
+    const countries = await env.DB.prepare("SELECT country, COUNT(*) as count FROM visits GROUP BY country ORDER BY count DESC LIMIT 5").all();
     const timeline = await env.DB.prepare("SELECT DATE(ts) as day, COUNT(*) as counts FROM visits GROUP BY day ORDER BY day ASC").all();
 
-    // 4. HET DASHBOARD (HTML/CSS)
+    // 5. HET DASHBOARD
     const html = `
     <!DOCTYPE html>
-    <html>
+    <html lang="nl">
     <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <script src="https://cdn.tailwindcss.com"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-      <title>Mini Analytics</title>
+      <title>Pro Analytics</title>
     </head>
-    <body class="bg-gray-900 text-white p-8">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold mb-8 text-blue-400">📊 Stats Dashboard</h1>
+    <body class="bg-gray-950 text-gray-100 p-4 md:p-10">
+      <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+          <h1 class="text-3xl font-bold text-blue-500">📈 Pro Analytics</h1>
+          <span class="bg-green-900 text-green-300 px-3 py-1 rounded-full text-sm">Live</span>
+        </div>
         
-        <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
-          <canvas id="myChart"></canvas>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800 md:col-span-2">
+            <canvas id="mainChart"></canvas>
+          </div>
+          <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
+            <h3 class="text-gray-400 mb-4 uppercase text-xs font-bold">Top Landen</h3>
+            ${countries.results.map(c => `
+              <div class="flex justify-between mb-2">
+                <span>${c.country}</span>
+                <span class="font-mono text-blue-400">${c.count}</span>
+              </div>
+            `).join('')}
+          </div>
         </div>
 
-        <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
-          <h2 class="text-xl font-semibold mb-4">Populaire Pagina's</h2>
+        <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
           <table class="w-full text-left">
-            <thead><tr class="border-b border-gray-700 text-gray-400"><th>Pagina</th><th class="text-right">Views</th></tr></thead>
+            <thead class="bg-gray-800 text-gray-400 text-sm">
+              <tr><th class="p-4">Pagina</th><th class="p-4 text-right">Views</th></tr>
+            </thead>
             <tbody>
-              ${stats.results.map(r => `<tr class="border-b border-gray-700 leading-10"><td>${r.url}</td><td class="text-right font-mono">${r.views}</td></tr>`).join('')}
+              ${stats.results.map(r => `
+                <tr class="border-t border-gray-800">
+                  <td class="p-4 text-blue-300">${r.url}</td>
+                  <td class="p-4 text-right font-mono">${r.views}</td>
+                </tr>`).join('')}
             </tbody>
           </table>
         </div>
       </div>
 
       <script>
-        const ctx = document.getElementById('myChart');
-        new Chart(ctx, {
+        new Chart(document.getElementById('mainChart'), {
           type: 'line',
           data: {
             labels: ${JSON.stringify(timeline.results.map(r => r.day))},
             datasets: [{
-              label: 'Bezoeken per dag',
+              label: 'Bezoekers',
               data: ${JSON.stringify(timeline.results.map(r => r.counts))},
-              borderColor: '#60a5fa',
-              backgroundColor: 'rgba(96, 165, 250, 0.2)',
-              fill: true,
-              tension: 0.3
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              fill: true, tension: 0.4
             }]
           },
-          options: { scales: { y: { beginAtZero: true, grid: { color: '#374151' } } } }
+          options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#222' } }, x: { grid: { display: false } } } }
         });
       </script>
     </body>
@@ -80,8 +119,3 @@ export default {
     return new Response(html, { headers: { "Content-Type": "text/html" } });
   }
 };
-
-// Hulpmiddeltje voor de hash
-async function b64(buffer) {
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)));
-}
