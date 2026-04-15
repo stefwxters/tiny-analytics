@@ -49,12 +49,12 @@ export default {
     <head>
       <script src="https://cdn.tailwindcss.com"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-      <title>Pro Analytics</title>
+      <title>Tiny Analytics</title>
     </head>
     <body class="bg-gray-950 text-gray-100 p-4 md:p-10">
       <div class="max-w-6xl mx-auto">
         <header class="flex justify-between items-center mb-10">
-          <h1 class="text-3xl font-bold text-blue-500 italic">PRO ANALYTICS</h1>
+          <h1 class="text-3xl font-bold text-blue-500 italic">Tiny Analytics</h1>
           <button onclick="document.cookie='auth=; Max-Age=0; path=/;'; location.href='/';" class="text-xs text-red-500 underline">Logout</button>
         </header>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
